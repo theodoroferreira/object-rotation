@@ -12,3 +12,14 @@
   - Camera spherical-to-cartesian conversion pattern is in `setup_camera()` — reuse for orbit controls
   - `sys.exit(0)` in keyboard callback cleanly exits GLUT main loop
 ---
+
+## 2026-04-01 - US-002
+- Implemented color-coded 3D coordinate axes: X=red, Y=green, Z=blue
+- Added axis labels (X, Y, Z) rendered as bitmap text near positive ends using glutBitmapCharacter
+- Axes extend ±5.0 units from origin, labels at 5.3 offset
+- Files changed: main.py (added draw_axes and draw_axis_labels functions, called from display)
+- **Learnings for future iterations:**
+  - `glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('X'))` renders single characters at glRasterPos3f position
+  - glBegin/glEnd blocks with GL_LINES draw line segments between vertex pairs
+  - Set glColor3f before glRasterPos3f/glVertex3f to color subsequent primitives
+---
