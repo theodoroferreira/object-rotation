@@ -4,6 +4,8 @@
 - GLUT double-buffered with RGB and depth buffer: `GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH`
 - Use `glPushMatrix/glPopMatrix` + `glTranslatef` to position objects without affecting other draw calls
 - `glutWireCube(size)` renders a wireframe cube centered at current matrix position
+- Animation uses `glutTimerFunc(16ms, callback, 0)` with self-re-registration for ~60 FPS loop
+- `glRotatef(angle, x, y, z)` after `glTranslatef` rotates object in-place around the specified axis
 
 ## 2026-04-01 - US-001
 - Implemented GLUT window (800x600) with perspective camera positioned diagonally (azimuth=45°, elevation=30°)
@@ -35,4 +37,16 @@
   - glPushMatrix/glPopMatrix isolates transformations per cube — essential for US-004 rotation
   - Wireframe cubes (`glutWireCube`) are more visible against black background than solid cubes without lighting
   - Cube position of 4.0 on axis length 5.0 gives a clear gap; cube half-size (0.2) doesn't reach axis end
+---
+
+## 2026-04-01 - US-004
+- Implemented continuous rotation animation for all 6 cubes around their respective axes
+- Added global `rotation_angle` incremented by 1.0°/frame via `glutTimerFunc` at ~60 FPS (16ms interval)
+- Modified `draw_cube` to accept rotation axis parameters; `glRotatef` applied after `glTranslatef` for in-place rotation
+- Timer callback re-registers itself for continuous animation, calls `glutPostRedisplay` to trigger redraws
+- Files changed: main.py (added animation globals, timer callback, rotation params to draw_cube/draw_cubes)
+- **Learnings for future iterations:**
+  - Order matters: `glTranslatef` then `glRotatef` rotates the cube in-place at its position; reversing would orbit around origin
+  - `glutTimerFunc` is one-shot — must re-register inside the callback for continuous animation
+  - `glutPostRedisplay` marks window for redraw without calling display directly — avoids recursion issues
 ---
