@@ -1,1 +1,8 @@
 /scripts
+/tasks
+.venv
+.mypy_cache
+.claude
+__pycache__
+prd.json
+progress.txt

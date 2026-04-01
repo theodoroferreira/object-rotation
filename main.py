@@ -1,8 +1,9 @@
 import sys
 import math
+import pygame
+from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from OpenGL.GLUT import *
 
 # Window dimensions
 WINDOW_WIDTH = 800
@@ -19,7 +20,6 @@ CAMERA_ORBIT_SPEED = 3.0  # degrees per key press
 # Animation parameters
 rotation_angle = 0.0
 ROTATION_SPEED = 1.0  # degrees per frame
-TIMER_INTERVAL = 16   # ~60 FPS (1000ms / 60 ≈ 16ms)
 
 
 def init():
@@ -74,13 +74,39 @@ def draw_axes():
     glEnd()
 
 
+def draw_wireframe_cube(size=0.4):
+    """Draw a wireframe cube centered at the origin."""
+    s = size / 2.0
+    edges = [
+        # Bottom face
+        (-s, -s, -s), (s, -s, -s),
+        (s, -s, -s), (s, -s, s),
+        (s, -s, s), (-s, -s, s),
+        (-s, -s, s), (-s, -s, -s),
+        # Top face
+        (-s, s, -s), (s, s, -s),
+        (s, s, -s), (s, s, s),
+        (s, s, s), (-s, s, s),
+        (-s, s, s), (-s, s, -s),
+        # Vertical edges
+        (-s, -s, -s), (-s, s, -s),
+        (s, -s, -s), (s, s, -s),
+        (s, -s, s), (s, s, s),
+        (-s, -s, s), (-s, s, s),
+    ]
+    glBegin(GL_LINES)
+    for v in edges:
+        glVertex3f(*v)
+    glEnd()
+
+
 def draw_cube(x, y, z, rot_axis_x, rot_axis_y, rot_axis_z, size=0.4):
     """Draw a wireframe cube at (x, y, z) rotating around the given axis."""
     glPushMatrix()
     glTranslatef(x, y, z)
     glRotatef(rotation_angle, rot_axis_x, rot_axis_y, rot_axis_z)
     glColor3f(1.0, 1.0, 0.0)
-    glutWireCube(size)
+    draw_wireframe_cube(size)
     glPopMatrix()
 
 
@@ -102,27 +128,53 @@ def draw_cubes():
 
 
 def draw_axis_labels():
-    """Draw X, Y, Z labels near the positive ends of each axis."""
-    label_offset = 5.3
+    """Draw X, Y, Z labels near the positive ends of each axis using pygame font rendering."""
+    font = pygame.font.SysFont("helvetica", 18)
+    labels = [
+        ("X", (255, 0, 0), 5.3, 0.0, 0.0),
+        ("Y", (0, 255, 0), 0.0, 5.3, 0.0),
+        ("Z", (0, 0, 255), 0.0, 0.0, 5.3),
+    ]
 
-    # X label
-    glColor3f(1.0, 0.0, 0.0)
-    glRasterPos3f(label_offset, 0.0, 0.0)
-    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('X'))
+    for text, color, x, y, z in labels:
+        # Project 3D position to 2D screen coordinates
+        modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
+        projection = glGetDoublev(GL_PROJECTION_MATRIX)
+        viewport = glGetIntegerv(GL_VIEWPORT)
+        screen = gluProject(x, y, z, modelview, projection, viewport)
+        if screen is not None:
+            sx, sy = int(screen[0]), int(WINDOW_HEIGHT - screen[1])
+            surface = font.render(text, True, color)
+            texture_data = pygame.image.tostring(surface, "RGBA", True)
+            w, h = surface.get_size()
 
-    # Y label
-    glColor3f(0.0, 1.0, 0.0)
-    glRasterPos3f(0.0, label_offset, 0.0)
-    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('Y'))
+            # Save OpenGL state and draw as 2D overlay
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
 
-    # Z label
-    glColor3f(0.0, 0.0, 1.0)
-    glRasterPos3f(0.0, 0.0, label_offset)
-    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('Z'))
+            glDisable(GL_DEPTH_TEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+            glRasterPos2i(sx, WINDOW_HEIGHT - sy)
+            glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, texture_data)
+
+            glDisable(GL_BLEND)
+            glEnable(GL_DEPTH_TEST)
+
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
 
 
 def display():
-    """Main display callback."""
+    """Main display function."""
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     setup_camera()
 
@@ -130,61 +182,53 @@ def display():
     draw_axis_labels()
     draw_cubes()
 
-    glutSwapBuffers()
-
-
-def timer(value):
-    """Timer callback for continuous animation at ~60 FPS."""
-    global rotation_angle
-    rotation_angle += ROTATION_SPEED
-    if rotation_angle >= 360.0:
-        rotation_angle -= 360.0
-    glutPostRedisplay()
-    glutTimerFunc(TIMER_INTERVAL, timer, 0)
-
-
-def keyboard(key, x, y):
-    """Handle regular key presses."""
-    if key == b'\x1b':  # ESC key
-        sys.exit(0)
-
-
-def special_keys(key, x, y):
-    """Handle arrow key presses for camera orbit controls."""
-    global camera_azimuth, camera_elevation
-
-    if key == GLUT_KEY_LEFT:
-        camera_azimuth -= CAMERA_ORBIT_SPEED
-    elif key == GLUT_KEY_RIGHT:
-        camera_azimuth += CAMERA_ORBIT_SPEED
-    elif key == GLUT_KEY_UP:
-        camera_elevation += CAMERA_ORBIT_SPEED
-    elif key == GLUT_KEY_DOWN:
-        camera_elevation -= CAMERA_ORBIT_SPEED
-
-    # Clamp elevation to avoid flipping at poles
-    camera_elevation = max(-89.0, min(89.0, camera_elevation))
-
-    # Keep azimuth in [0, 360) range
-    camera_azimuth = camera_azimuth % 360.0
-
-    glutPostRedisplay()
+    pygame.display.flip()
 
 
 def main():
-    glutInit(sys.argv)
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
-    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT)
-    glutCreateWindow(b"Simulador de Transformacoes 3D")
+    global rotation_angle, camera_azimuth, camera_elevation
+
+    pygame.init()
+    pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), DOUBLEBUF | OPENGL)
+    pygame.display.set_caption("Simulador de Transformacoes 3D")
 
     init()
 
-    glutDisplayFunc(display)
-    glutKeyboardFunc(keyboard)
-    glutSpecialFunc(special_keys)
-    glutTimerFunc(TIMER_INTERVAL, timer, 0)
+    clock = pygame.time.Clock()
 
-    glutMainLoop()
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit(0)
+            elif event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+                    sys.exit(0)
+
+        # Handle held keys for smooth camera orbit
+        keys = pygame.key.get_pressed()
+        if keys[K_LEFT]:
+            camera_azimuth -= CAMERA_ORBIT_SPEED
+        if keys[K_RIGHT]:
+            camera_azimuth += CAMERA_ORBIT_SPEED
+        if keys[K_UP]:
+            camera_elevation += CAMERA_ORBIT_SPEED
+        if keys[K_DOWN]:
+            camera_elevation -= CAMERA_ORBIT_SPEED
+
+        # Clamp elevation to avoid flipping at poles
+        camera_elevation = max(-89.0, min(89.0, camera_elevation))
+        # Keep azimuth in [0, 360) range
+        camera_azimuth = camera_azimuth % 360.0
+
+        # Update animation
+        rotation_angle += ROTATION_SPEED
+        if rotation_angle >= 360.0:
+            rotation_angle -= 360.0
+
+        display()
+        clock.tick(60)
 
 
 if __name__ == "__main__":
