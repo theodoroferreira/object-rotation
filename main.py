@@ -13,6 +13,11 @@ camera_distance = 8.0
 camera_azimuth = 45.0   # horizontal angle in degrees
 camera_elevation = 30.0  # vertical angle in degrees
 
+# Animation parameters
+rotation_angle = 0.0
+ROTATION_SPEED = 1.0  # degrees per frame
+TIMER_INTERVAL = 16   # ~60 FPS (1000ms / 60 ≈ 16ms)
+
 
 def init():
     """Initialize OpenGL settings."""
@@ -66,30 +71,31 @@ def draw_axes():
     glEnd()
 
 
-def draw_cube(x, y, z, size=0.4):
-    """Draw a wireframe cube centered at (x, y, z)."""
+def draw_cube(x, y, z, rot_axis_x, rot_axis_y, rot_axis_z, size=0.4):
+    """Draw a wireframe cube at (x, y, z) rotating around the given axis."""
     glPushMatrix()
     glTranslatef(x, y, z)
+    glRotatef(rotation_angle, rot_axis_x, rot_axis_y, rot_axis_z)
     glColor3f(1.0, 1.0, 0.0)
     glutWireCube(size)
     glPopMatrix()
 
 
 def draw_cubes():
-    """Draw 6 cubes at axis extremities with offset from axes."""
+    """Draw 6 cubes at axis extremities, each rotating around its respective axis."""
     pos = 4.0  # position along axis (within axis length of 5.0, with visible gap)
 
-    # +X and -X
-    draw_cube(pos, 0.0, 0.0)
-    draw_cube(-pos, 0.0, 0.0)
+    # +X and -X: rotate around X axis
+    draw_cube(pos, 0.0, 0.0, 1.0, 0.0, 0.0)
+    draw_cube(-pos, 0.0, 0.0, 1.0, 0.0, 0.0)
 
-    # +Y and -Y
-    draw_cube(0.0, pos, 0.0)
-    draw_cube(0.0, -pos, 0.0)
+    # +Y and -Y: rotate around Y axis
+    draw_cube(0.0, pos, 0.0, 0.0, 1.0, 0.0)
+    draw_cube(0.0, -pos, 0.0, 0.0, 1.0, 0.0)
 
-    # +Z and -Z
-    draw_cube(0.0, 0.0, pos)
-    draw_cube(0.0, 0.0, -pos)
+    # +Z and -Z: rotate around Z axis
+    draw_cube(0.0, 0.0, pos, 0.0, 0.0, 1.0)
+    draw_cube(0.0, 0.0, -pos, 0.0, 0.0, 1.0)
 
 
 def draw_axis_labels():
@@ -124,6 +130,16 @@ def display():
     glutSwapBuffers()
 
 
+def timer(value):
+    """Timer callback for continuous animation at ~60 FPS."""
+    global rotation_angle
+    rotation_angle += ROTATION_SPEED
+    if rotation_angle >= 360.0:
+        rotation_angle -= 360.0
+    glutPostRedisplay()
+    glutTimerFunc(TIMER_INTERVAL, timer, 0)
+
+
 def keyboard(key, x, y):
     """Handle regular key presses."""
     if key == b'\x1b':  # ESC key
@@ -140,6 +156,7 @@ def main():
 
     glutDisplayFunc(display)
     glutKeyboardFunc(keyboard)
+    glutTimerFunc(TIMER_INTERVAL, timer, 0)
 
     glutMainLoop()
 
