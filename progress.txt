@@ -6,6 +6,8 @@
 - `glutWireCube(size)` renders a wireframe cube centered at current matrix position
 - Animation uses `glutTimerFunc(16ms, callback, 0)` with self-re-registration for ~60 FPS loop
 - `glRotatef(angle, x, y, z)` after `glTranslatef` rotates object in-place around the specified axis
+- Arrow keys use `glutSpecialFunc` (not `glutKeyboardFunc`) — GLUT treats special keys separately
+- Clamp camera elevation to ±89° to avoid gimbal lock / up-vector flip at poles
 
 ## 2026-04-01 - US-001
 - Implemented GLUT window (800x600) with perspective camera positioned diagonally (azimuth=45°, elevation=30°)
@@ -49,4 +51,16 @@
   - Order matters: `glTranslatef` then `glRotatef` rotates the cube in-place at its position; reversing would orbit around origin
   - `glutTimerFunc` is one-shot — must re-register inside the callback for continuous animation
   - `glutPostRedisplay` marks window for redraw without calling display directly — avoids recursion issues
+---
+
+## 2026-04-01 - US-005
+- Implemented arrow key camera orbit controls using `glutSpecialFunc`
+- Left/Right arrows orbit horizontally (azimuth), Up/Down orbit vertically (elevation)
+- Elevation clamped to ±89° to prevent gimbal lock at poles
+- Azimuth wraps around via modulo 360
+- Files changed: main.py (added `special_keys` callback, `CAMERA_ORBIT_SPEED` constant, registered with `glutSpecialFunc`)
+- **Learnings for future iterations:**
+  - `glutSpecialFunc` handles arrow keys, F-keys, etc. — `glutKeyboardFunc` only handles ASCII keys
+  - Clamping elevation to ±89° (not ±90°) avoids the degenerate case where the up-vector aligns with the view direction
+  - `glutPostRedisplay()` in input handlers ensures immediate visual feedback without waiting for the timer
 ---
