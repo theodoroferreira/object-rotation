@@ -42,10 +42,57 @@ def setup_camera():
               0.0, 1.0, 0.0)
 
 
+def draw_axes():
+    """Draw color-coded X, Y, Z axes through the origin."""
+    axis_length = 5.0
+
+    glBegin(GL_LINES)
+
+    # X axis - Red
+    glColor3f(1.0, 0.0, 0.0)
+    glVertex3f(-axis_length, 0.0, 0.0)
+    glVertex3f(axis_length, 0.0, 0.0)
+
+    # Y axis - Green
+    glColor3f(0.0, 1.0, 0.0)
+    glVertex3f(0.0, -axis_length, 0.0)
+    glVertex3f(0.0, axis_length, 0.0)
+
+    # Z axis - Blue
+    glColor3f(0.0, 0.0, 1.0)
+    glVertex3f(0.0, 0.0, -axis_length)
+    glVertex3f(0.0, 0.0, axis_length)
+
+    glEnd()
+
+
+def draw_axis_labels():
+    """Draw X, Y, Z labels near the positive ends of each axis."""
+    label_offset = 5.3
+
+    # X label
+    glColor3f(1.0, 0.0, 0.0)
+    glRasterPos3f(label_offset, 0.0, 0.0)
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('X'))
+
+    # Y label
+    glColor3f(0.0, 1.0, 0.0)
+    glRasterPos3f(0.0, label_offset, 0.0)
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('Y'))
+
+    # Z label
+    glColor3f(0.0, 0.0, 1.0)
+    glRasterPos3f(0.0, 0.0, label_offset)
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord('Z'))
+
+
 def display():
     """Main display callback."""
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     setup_camera()
+
+    draw_axes()
+    draw_axis_labels()
 
     glutSwapBuffers()
 
