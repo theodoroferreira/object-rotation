@@ -66,6 +66,32 @@ def draw_axes():
     glEnd()
 
 
+def draw_cube(x, y, z, size=0.4):
+    """Draw a wireframe cube centered at (x, y, z)."""
+    glPushMatrix()
+    glTranslatef(x, y, z)
+    glColor3f(1.0, 1.0, 0.0)
+    glutWireCube(size)
+    glPopMatrix()
+
+
+def draw_cubes():
+    """Draw 6 cubes at axis extremities with offset from axes."""
+    pos = 4.0  # position along axis (within axis length of 5.0, with visible gap)
+
+    # +X and -X
+    draw_cube(pos, 0.0, 0.0)
+    draw_cube(-pos, 0.0, 0.0)
+
+    # +Y and -Y
+    draw_cube(0.0, pos, 0.0)
+    draw_cube(0.0, -pos, 0.0)
+
+    # +Z and -Z
+    draw_cube(0.0, 0.0, pos)
+    draw_cube(0.0, 0.0, -pos)
+
+
 def draw_axis_labels():
     """Draw X, Y, Z labels near the positive ends of each axis."""
     label_offset = 5.3
@@ -93,6 +119,7 @@ def display():
 
     draw_axes()
     draw_axis_labels()
+    draw_cubes()
 
     glutSwapBuffers()
 
