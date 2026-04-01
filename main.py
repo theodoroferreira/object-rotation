@@ -13,6 +13,9 @@ camera_distance = 8.0
 camera_azimuth = 45.0   # horizontal angle in degrees
 camera_elevation = 30.0  # vertical angle in degrees
 
+# Camera orbit speed
+CAMERA_ORBIT_SPEED = 3.0  # degrees per key press
+
 # Animation parameters
 rotation_angle = 0.0
 ROTATION_SPEED = 1.0  # degrees per frame
@@ -146,6 +149,28 @@ def keyboard(key, x, y):
         sys.exit(0)
 
 
+def special_keys(key, x, y):
+    """Handle arrow key presses for camera orbit controls."""
+    global camera_azimuth, camera_elevation
+
+    if key == GLUT_KEY_LEFT:
+        camera_azimuth -= CAMERA_ORBIT_SPEED
+    elif key == GLUT_KEY_RIGHT:
+        camera_azimuth += CAMERA_ORBIT_SPEED
+    elif key == GLUT_KEY_UP:
+        camera_elevation += CAMERA_ORBIT_SPEED
+    elif key == GLUT_KEY_DOWN:
+        camera_elevation -= CAMERA_ORBIT_SPEED
+
+    # Clamp elevation to avoid flipping at poles
+    camera_elevation = max(-89.0, min(89.0, camera_elevation))
+
+    # Keep azimuth in [0, 360) range
+    camera_azimuth = camera_azimuth % 360.0
+
+    glutPostRedisplay()
+
+
 def main():
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
@@ -156,6 +181,7 @@ def main():
 
     glutDisplayFunc(display)
     glutKeyboardFunc(keyboard)
+    glutSpecialFunc(special_keys)
     glutTimerFunc(TIMER_INTERVAL, timer, 0)
 
     glutMainLoop()
